@@ -1,20 +1,80 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
-// ES Module fix for __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-// Initialize Gemini API with the same configuration as the diagnosis controller
+// Initialize the Gemini API with the key from .env
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Import the updated parsing functions
-// Note: We'll copy the functions here to avoid importing from the controller directly
+/**
+ * Analyzes pet symptoms using the Gemini API
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const analyzePetSymptoms = async (req, res) => {
+  try {
+    const { petType, petProblem } = req.body;
+    
+    // Validate input
+    if (!petType || !petProblem) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Pet type and problem description are required' 
+      });
+    }
+    
+    // Initialize the Gemini model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // Construct the prompt for the AI
+    const prompt = `
+      I need a veterinary analysis for a ${petType} with the following symptoms: ${petProblem}.
+      
+      Please provide:
+      1. A detailed analysis of the symptoms
+      2. Possible conditions (at least 3 if applicable) with probability levels (High, Medium, Low)
+      3. Brief description of each condition
+      4. Recommendations for the pet owner
+      
+      Format the response in a structured way that can be parsed easily.
+    `;
+    
+    console.log('Sending request to Gemini API...');
+    
+    // Generate content using Gemini API
+    const result = await model.generateContent(prompt);
+    const aiResponse = result.response.text();
+    
+    console.log('AI Response type:', typeof aiResponse);
+    
+    // Extract structured data from the AI response
+    const analysis = {
+      aiAnalysis: aiResponse,
+      possibleConditions: extractConditions(aiResponse),
+      recommendations: extractRecommendations(aiResponse)
+    };
+    
+    // Return the analysis to the client
+    return res.status(200).json({
+      success: true,
+      data: analysis
+    });
+    
+  } catch (error) {
+    console.error('Error in analyzePetSymptoms:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to analyze pet symptoms',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Extracts conditions from the AI response
+ * @param {string} aiResponse - The raw AI response text
+ * @returns {Array} - Array of condition objects
+ */
 function extractConditions(aiResponse) {
   // This is a more robust extraction logic to handle different AI response formats
   const conditions = [];
@@ -22,7 +82,6 @@ function extractConditions(aiResponse) {
   // Look for sections that might contain condition information
   const lines = aiResponse.split('\n');
   let inConditionsSection = false;
-  let conditionDescriptions = {};
   
   // First pass: Find the conditions section and extract condition names and probabilities
   for (let i = 0; i < lines.length; i++) {
@@ -78,7 +137,6 @@ function extractConditions(aiResponse) {
   }
   
   // Second pass: Extract descriptions for each condition
-  inConditionsSection = false;
   let inDescriptionsSection = false;
   
   for (let i = 0; i < lines.length; i++) {
@@ -147,6 +205,12 @@ function extractConditions(aiResponse) {
   return conditions;
 }
 
+/**
+ * Helper function to extract description for a specific condition
+ * @param {string} conditionName - The name of the condition
+ * @param {Array} lines - Array of lines from the AI response
+ * @returns {string} - The extracted description
+ */
 function extractDescriptionForCondition(conditionName, lines) {
   // Look for descriptions that follow the condition name
   for (let i = 0; i < lines.length; i++) {
@@ -163,6 +227,11 @@ function extractDescriptionForCondition(conditionName, lines) {
   return 'No detailed description available';
 }
 
+/**
+ * Extracts recommendations from the AI response
+ * @param {string} aiResponse - The raw AI response text
+ * @returns {string} - The extracted recommendations
+ */
 function extractRecommendations(aiResponse) {
   // More robust extraction of recommendations
   const lines = aiResponse.split('\n');
@@ -208,72 +277,3 @@ function extractRecommendations(aiResponse) {
   
   return 'No specific recommendations provided';
 }
-
-async function testParsingFunctions() {
-  try {
-    const animalType = 'dog';
-    const symptoms = 'vomiting, lethargy';
-    
-    // Use the same model and configuration as in the diagnosis controller
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
-    // Use the exact same prompt as in the diagnosis controller
-    const prompt = `
-      I need a veterinary analysis for a ${animalType} with the following symptoms: ${symptoms}.
-      
-      Please provide:
-      1. A detailed analysis of the symptoms
-      2. Possible conditions (at least 3 if applicable) with probability levels (High, Medium, Low)
-      3. Brief description of each condition
-      4. Recommendations for the pet owner
-      
-      Format the response in a structured way that can be parsed easily.
-    `;
-    
-    console.log('Testing updated parsing functions with gemini-1.5-flash model...');
-    console.log('Sending request to Gemini API...');
-    
-    const result = await model.generateContent(prompt);
-    const aiResponse = result.response.text();
-    
-    console.log('\nAI Response received successfully. Testing parsing functions...');
-    
-    // Test the extraction functions
-    console.log('\n1. Testing extractConditions function:');
-    const conditions = extractConditions(aiResponse);
-    console.log(`Found ${conditions.length} conditions:`);
-    conditions.forEach((condition, index) => {
-      console.log(`\nCondition ${index + 1}:`);
-      console.log(`- Name: ${condition.condition}`);
-      console.log(`- Probability: ${condition.probability}`);
-      console.log(`- Description: ${condition.description.substring(0, 100)}...`);
-    });
-    
-    console.log('\n2. Testing extractRecommendations function:');
-    const recommendations = extractRecommendations(aiResponse);
-    console.log('Recommendations preview:');
-    console.log(recommendations.substring(0, 200) + '...');
-    
-    console.log('\nParsing test complete. All functions are working correctly!');
-    
-    // Create a mock diagnosis object to simulate what would be saved to the database
-    const mockDiagnosis = {
-      animalType,
-      symptoms,
-      aiAnalysis: aiResponse,
-      possibleConditions: conditions,
-      recommendations
-    };
-    
-    console.log('\nMock diagnosis object created successfully:');
-    console.log(JSON.stringify(mockDiagnosis, null, 2).substring(0, 500) + '...');
-    
-    return true;
-  } catch (error) {
-    console.error('Error in test function:', error.message);
-    console.error('Full error:', error);
-    return false;
-  }
-}
-
-testParsingFunctions();

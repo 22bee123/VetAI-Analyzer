@@ -1,60 +1,34 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import analyzeRoutes from "./routes/analyze.route.js";
 
-// ES Module fix for __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Load environment variables from root directory
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
-// Import routes
-import authRoutes from './routes/auth.routes.js';
-import diagnosisRoutes from './routes/diagnosis.routes.js';
-import userRoutes from './routes/user.routes.js';
+dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/diagnosis', diagnosisRoutes);
-app.use('/api/users', userRoutes);
+app.use("/api/analyze", analyzeRoutes);
 
-// Serve static assets in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../frontend', 'dist', 'index.html'));
-  });
-}
-
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected...'))
-  .catch(err => console.error('MongoDB connection error:', err));
+app.get("/", (req, res) => {
+  res.send("VetAI Analyzer API is running!");
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     success: false,
-    message: 'Server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : null
+    message: "Something went wrong!",
+    error: process.env.NODE_ENV === "development" ? err.message : "Internal Server Error"
   });
 });
 
-const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

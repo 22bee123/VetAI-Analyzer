@@ -30,22 +30,3 @@ User Management: Implement user registration and login features using Express.js
 Data Privacy: Ensure all user and pet data is securely stored and protected.
 
 Notification System: Develop a system to notify users of updates or potential health risks.
-
-Step 6: Test and Refine the App
-Alpha and Beta Testing: Conduct thorough testing with a small group of users.
-
-Iterate Based on Feedback: Address any issues or suggestions from testers.
-
-Finalize the App: Once satisfied with the performance, prepare for launch.
-
-Step 7: Deploy the App
-Platform Selection: Decide whether to deploy on web platforms or mobile (using React for web).
-
-Marketing Strategy: Develop a marketing plan to reach the target audience.
-
-Post-Launch Support: Provide ongoing support and updates to maintain user satisfaction.
-
-Step 8: Maintain and Update
-Regular Updates: Ensure the app stays updated with new features and security patches.
-
-User Feedback Loop: Continuously collect user feedback to improve the app's functionality and user experience.
