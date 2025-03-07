@@ -100,7 +100,25 @@ const Home: React.FC = () => {
                         {condition.probability} Probability
                       </span>
                     </div>
-                    <p className="text-gray-600 mt-1">{condition.description}</p>
+                    <div 
+                      className="prose max-w-none text-gray-600 mt-1"
+                      dangerouslySetInnerHTML={{ 
+                        __html: condition.description
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                          .replace(/•\s(.*?)(?=(\n|$))/g, '<li>$1</li>')
+                          .replace(/(\d+)\.\s(.*?)(?=(\n|$))/g, '<li><span class="font-medium">$1.</span> $2</li>')
+                          .replace(/<li>/g, '<li>')
+                          .replace(/\n\n/g, '</p><p class="mb-2">')
+                          .replace(/\n(?!<\/p>)/g, '<br />')
+                          .split('</li>').join('</li>\n')
+                          .split('<li').filter(item => item.includes('>')).map(item => {
+                            if (!item.startsWith(' class')) return '<li' + item;
+                            return item;
+                          }).join('')
+                          .replace(/(<li.*?>.*?<\/li>\n)+/g, match => `<ul class="list-disc pl-5">${match}</ul>`)
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -109,7 +127,25 @@ const Home: React.FC = () => {
             <div>
               <h3 className="text-xl font-medium mb-3">Recommendations</h3>
               <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="whitespace-pre-line">{analysisResult.recommendations}</p>
+                <div 
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ 
+                    __html: analysisResult.recommendations
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      .replace(/•\s(.*?)(?=(\n|$))/g, '<li>$1</li>')
+                      .replace(/(\d+)\.\s(.*?)(?=(\n|$))/g, '<li><span class="font-medium">$1.</span> $2</li>')
+                      .replace(/<li>/g, '<li>')
+                      .replace(/\n\n/g, '</p><p class="mb-">')
+                      .replace(/\n(?!<\/p>)/g, '<br />')
+                      .split('</li>').join('</li>\n')
+                      .split('<li').filter(item => item.includes('>')).map(item => {
+                        if (!item.startsWith(' class')) return '<li' + item;
+                        return item;
+                      }).join('')
+                      .replace(/(<li.*?>.*?<\/li>\n)+/g, match => `<ul class="list-disc pl-5">${match}</ul>`)
+                  }}
+                />
               </div>
             </div>
             

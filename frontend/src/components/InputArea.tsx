@@ -7,15 +7,21 @@ interface InputAreaProps {
 
 const InputArea: React.FC<InputAreaProps> = ({ onSubmit, isLoading = false }) => {
   const [petType, setPetType] = useState('');
+  const [otherPetType, setOtherPetType] = useState('');
   const [petProblem, setPetProblem] = useState('');
-  const [errors, setErrors] = useState({ petType: '', petProblem: '' });
+  const [errors, setErrors] = useState({ petType: '', otherPetType: '', petProblem: '' });
 
   const validateInputs = (): boolean => {
-    const newErrors = { petType: '', petProblem: '' };
+    const newErrors = { petType: '', otherPetType: '', petProblem: '' };
     let isValid = true;
 
     if (!petType.trim()) {
       newErrors.petType = 'Please select your pet type';
+      isValid = false;
+    }
+
+    if (petType === 'Other' && !otherPetType.trim()) {
+      newErrors.otherPetType = 'Please specify your pet type';
       isValid = false;
     }
 
@@ -32,7 +38,9 @@ const InputArea: React.FC<InputAreaProps> = ({ onSubmit, isLoading = false }) =>
     e.preventDefault();
     
     if (validateInputs()) {
-      onSubmit(petType, petProblem);
+      // If "Other" is selected, use the custom pet type entered by the user
+      const finalPetType = petType === 'Other' ? otherPetType : petType;
+      onSubmit(finalPetType, petProblem);
     }
   };
 
@@ -68,6 +76,26 @@ const InputArea: React.FC<InputAreaProps> = ({ onSubmit, isLoading = false }) =>
             <p className="text-red-500 text-sm mt-1">{errors.petType}</p>
           )}
         </div>
+        
+        {petType === 'Other' && (
+          <div className="mb-4">
+            <label htmlFor="otherPetType" className="block text-gray-700 font-medium mb-2">
+              Please specify your pet type
+            </label>
+            <input
+              type="text"
+              id="otherPetType"
+              value={otherPetType}
+              onChange={(e) => setOtherPetType(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter your pet type..."
+              disabled={isLoading}
+            />
+            {errors.otherPetType && (
+              <p className="text-red-500 text-sm mt-1">{errors.otherPetType}</p>
+            )}
+          </div>
+        )}
         
         <div className="mb-4">
           <label htmlFor="petProblem" className="block text-gray-700 font-medium mb-2">

@@ -28,7 +28,7 @@ export const analyzePetSymptoms = async (req, res) => {
     
     // Construct the prompt for the AI
     const prompt = `
-      I need a veterinary analysis for a ${petType} with the following symptoms: ${petProblem}.
+      I need a comprehensive veterinary analysis for a ${petType} with the following symptoms: ${petProblem}.
       
       Please provide:
       1. A detailed analysis of the symptoms
@@ -36,7 +36,15 @@ export const analyzePetSymptoms = async (req, res) => {
       3. Brief description of each condition
       4. Recommendations for the pet owner
       
+      For the recommendations section, please:
+      - Start with a clear, concise summary of the most urgent action needed
+      - Provide specific, actionable steps organized by priority
+      - Include both immediate care recommendations and follow-up actions
+      - Use professional medical terminology while remaining accessible to pet owners
+      - Format each recommendation as a separate bullet point for clarity
+      
       Format the response in a structured way that can be parsed easily.
+  
     `;
     
     console.log('Sending request to Gemini API...');
@@ -48,10 +56,17 @@ export const analyzePetSymptoms = async (req, res) => {
     console.log('AI Response type:', typeof aiResponse);
     
     // Extract structured data from the AI response
+    console.log('Extracting structured data from AI response...');
+    
+    const possibleConditions = extractConditions(aiResponse);
+    console.log('Extracted conditions:', JSON.stringify(possibleConditions, null, 2));
+    
+    const recommendations = extractRecommendations(aiResponse);
+    
     const analysis = {
       aiAnalysis: aiResponse,
-      possibleConditions: extractConditions(aiResponse),
-      recommendations: extractRecommendations(aiResponse)
+      possibleConditions: possibleConditions,
+      recommendations: recommendations
     };
     
     // Return the analysis to the client
@@ -89,14 +104,15 @@ function extractConditions(aiResponse) {
     
     // Check if we're in the conditions section
     if (line.toLowerCase().includes('possible conditions') || 
-        line.toLowerCase().includes('potential diagnoses')) {
+        line.toLowerCase().includes('potential diagnoses') ||
+        line.toLowerCase().includes('possible diagnoses')) {
       inConditionsSection = true;
       continue;
     }
     
     // Check if we've moved past the conditions section to descriptions or recommendations
     if (inConditionsSection && 
-        (line.toLowerCase().includes('description') || 
+        (line.toLowerCase().includes('description of each condition') || 
          line.toLowerCase().includes('recommendations') || 
          line.toLowerCase().includes('advice'))) {
       inConditionsSection = false;
@@ -130,6 +146,28 @@ function extractConditions(aiResponse) {
         conditions.push({
           condition: standardMatch[1].trim(),
           probability: standardMatch[2].trim(),
+          description: '' // Will be filled in second pass
+        });
+        continue;
+      }
+      
+      // Try bullet point format: "• Condition name (High/Medium/Low)"
+      const bulletMatch = line.match(/^[*•-]\s+(.+?)\s*\((\w+)\)/);
+      if (bulletMatch) {
+        conditions.push({
+          condition: bulletMatch[1].trim(),
+          probability: bulletMatch[2].trim(),
+          description: '' // Will be filled in second pass
+        });
+        continue;
+      }
+      
+      // Try numbered format: "1. Condition name (High/Medium/Low)"
+      const numberedMatch = line.match(/^\d+\.\s+(.+?)\s*\((\w+)\)/);
+      if (numberedMatch) {
+        conditions.push({
+          condition: numberedMatch[1].trim(),
+          probability: numberedMatch[2].trim(),
           description: '' // Will be filled in second pass
         });
       }
@@ -202,6 +240,61 @@ function extractConditions(aiResponse) {
     }
   }
   
+  // If we still don't have any conditions, try a more aggressive approach
+  if (conditions.length === 0) {
+    // Look for any lines that might contain condition information
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Look for lines with probability indicators
+      if (line.toLowerCase().includes('high') || 
+          line.toLowerCase().includes('medium') || 
+          line.toLowerCase().includes('low')) {
+        
+        // Try to extract condition and probability
+        let condition = '';
+        let probability = '';
+        
+        if (line.toLowerCase().includes('high')) {
+          probability = 'High';
+          condition = line.split('high')[0].trim();
+        } else if (line.toLowerCase().includes('medium')) {
+          probability = 'Medium';
+          condition = line.split('medium')[0].trim();
+        } else if (line.toLowerCase().includes('low')) {
+          probability = 'Low';
+          condition = line.split('low')[0].trim();
+        }
+        
+        // Clean up the condition name
+        condition = condition.replace(/^[*•-]\s+/, '')  // Remove bullet points
+                           .replace(/^\d+\.\s+/, '')    // Remove numbering
+                           .replace(/\s*[-:]\s*$/, '')  // Remove trailing dash or colon
+                           .trim();
+        
+        if (condition && probability) {
+          conditions.push({
+            condition,
+            probability,
+            description: 'No detailed description available'
+          });
+        }
+      }
+    }
+  }
+  
+  // Ensure we return at least one condition with a fallback
+  if (conditions.length === 0) {
+    console.log('Warning: Could not extract conditions from AI response. Using fallback.');
+    return [
+      {
+        condition: 'Unspecified Condition',
+        probability: 'Medium',
+        description: 'The AI response did not contain clearly formatted conditions. Please consult with a veterinarian for a proper diagnosis.'
+      }
+    ];
+  }
+  
   return conditions;
 }
 
@@ -246,6 +339,10 @@ function extractRecommendations(aiResponse) {
         line.toLowerCase().includes('advice for pet owner') ||
         line.toLowerCase().includes('advice to pet owner')) {
       inRecommendationsSection = true;
+      // Add the header if it's a proper heading
+      if (line.match(/^#+\s+/)) {
+        recommendations.push(line.replace(/^#+\s+/, '**') + '**');
+      }
       continue;
     }
     
@@ -259,13 +356,32 @@ function extractRecommendations(aiResponse) {
     
     // Collect recommendation lines
     if (inRecommendationsSection && line !== '') {
-      recommendations.push(line);
+      // Format bullet points consistently
+      if (line.match(/^[*•-]\s+/)) {
+        recommendations.push(line.replace(/^[*•-]\s+/, '• '));
+      } else if (line.match(/^\d+\.\s+/)) {
+        // Keep numbered lists as is
+        recommendations.push(line);
+      } else if (line.match(/^[A-Z]/)) {
+        // If it starts with a capital letter and isn't a bullet point, it might be a new paragraph
+        recommendations.push('\n' + line);
+      } else {
+        recommendations.push(line);
+      }
     }
   }
   
-  // If we found recommendations, join them
+  // If we found recommendations, join them and format them
   if (recommendations.length > 0) {
-    return recommendations.join('\n');
+    let formattedRecommendations = recommendations.join('\n');
+    
+    // Add a professional note at the end if not already present
+    if (!formattedRecommendations.toLowerCase().includes('consult') && 
+        !formattedRecommendations.toLowerCase().includes('veterinarian')) {
+      formattedRecommendations += '\n\n**Important Note:** This analysis is provided as guidance only. Please consult with a licensed veterinarian for proper diagnosis and treatment.';
+    }
+    
+    return formattedRecommendations;
   }
   
   // Fallback: try to find recommendations using regex
@@ -275,5 +391,5 @@ function extractRecommendations(aiResponse) {
     return recommendationsMatch[1].trim();
   }
   
-  return 'No specific recommendations provided';
+  return 'No specific recommendations provided. Please consult with a veterinarian for proper guidance based on your pet\'s symptoms.';
 }
