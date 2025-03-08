@@ -11,6 +11,8 @@ interface AnalysisResult {
   aiAnalysis: string;
   possibleConditions: Condition[];
   recommendations: string;
+  diagnosticTests: string;
+  longTermManagement: string;
 }
 
 const Home: React.FC = () => {
@@ -148,6 +150,60 @@ const Home: React.FC = () => {
                 />
               </div>
             </div>
+            
+            {analysisResult.diagnosticTests && (
+              <div className="mt-6">
+                <h3 className="text-xl font-medium mb-3">Recommended Diagnostic Tests</h3>
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div 
+                    className="prose max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: analysisResult.diagnosticTests
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/•\s(.*?)(?=(\n|$))/g, '<li>$1</li>')
+                        .replace(/(\d+)\.\s(.*?)(?=(\n|$))/g, '<li><span class="font-medium">$1.</span> $2</li>')
+                        .replace(/<li>/g, '<li>')
+                        .replace(/\n\n/g, '</p><p class="mb-">')
+                        .replace(/\n(?!<\/p>)/g, '<br />')
+                        .split('</li>').join('</li>\n')
+                        .split('<li').filter(item => item.includes('>')).map(item => {
+                          if (!item.startsWith(' class')) return '<li' + item;
+                          return item;
+                        }).join('')
+                        .replace(/(<li.*?>.*?<\/li>\n)+/g, match => `<ul class="list-disc pl-5">${match}</ul>`)
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {analysisResult.longTermManagement && (
+              <div className="mt-6">
+                <h3 className="text-xl font-medium mb-3">Long-Term Management</h3>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div 
+                    className="prose max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: analysisResult.longTermManagement
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/•\s(.*?)(?=(\n|$))/g, '<li>$1</li>')
+                        .replace(/(\d+)\.\s(.*?)(?=(\n|$))/g, '<li><span class="font-medium">$1.</span> $2</li>')
+                        .replace(/<li>/g, '<li>')
+                        .replace(/\n\n/g, '</p><p class="mb-">')
+                        .replace(/\n(?!<\/p>)/g, '<br />')
+                        .split('</li>').join('</li>\n')
+                        .split('<li').filter(item => item.includes('>')).map(item => {
+                          if (!item.startsWith(' class')) return '<li' + item;
+                          return item;
+                        }).join('')
+                        .replace(/(<li.*?>.*?<\/li>\n)+/g, match => `<ul class="list-disc pl-5">${match}</ul>`)
+                    }}
+                  />
+                </div>
+              </div>
+            )}
             
             <div className="mt-6 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-500 italic">

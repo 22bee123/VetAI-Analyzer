@@ -23,18 +23,28 @@ export const analyzePetSymptoms = async (req, res) => {
       });
     }
     
-    // Initialize the Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Initialize the Gemini model with more tokens and temperature for more detailed responses
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 4096,
+      }
+    });
     
     // Construct the prompt for the AI
     const prompt = `
-      I need a comprehensive veterinary analysis for a ${petType} with the following symptoms: ${petProblem}.
+      I need a comprehensive and detailed veterinary analysis for a ${petType} with the following symptoms: ${petProblem}.
       
-      Please provide:
-      1. A detailed analysis of the symptoms
-      2. Possible conditions (at least 3 if applicable) with probability levels (High, Medium, Low)
-      3. Brief description of each condition
-      4. Recommendations for the pet owner
+      Please provide an extensive and thorough response with:
+      1. A detailed analysis of the symptoms with physiological explanations where relevant
+      2. Possible conditions (at least 4-5 if applicable) with probability levels (High, Medium, Low) and confidence percentages
+      3. Comprehensive description of each condition including pathophysiology, typical progression, and distinguishing features
+      4. Detailed recommendations for the pet owner organized by urgency and importance
+      5. Potential diagnostic tests that would help confirm the diagnosis
+      6. Long-term management considerations if applicable
       
       For the recommendations section, please:
       - Start with a clear, concise summary of the most urgent action needed
@@ -42,9 +52,16 @@ export const analyzePetSymptoms = async (req, res) => {
       - Include both immediate care recommendations and follow-up actions
       - Use professional medical terminology while remaining accessible to pet owners
       - Format each recommendation as a separate bullet point for clarity
+      - Include timeframes for when to seek veterinary care (e.g., "within 24 hours" or "immediately if symptoms worsen")
       
-      Format the response in a structured way that can be parsed easily.
-  
+      For each condition, please include:
+      - Common clinical signs and how they relate to the described symptoms
+      - Typical progression of the condition if left untreated
+      - Potential complications
+      - General prognosis with proper treatment
+      
+      Format the response in a structured way that can be parsed easily, using markdown formatting.
+      Please provide an extensive and detailed response (at least 500 words) to ensure comprehensive coverage of all aspects.
     `;
     
     console.log('Sending request to Gemini API...');
@@ -62,11 +79,15 @@ export const analyzePetSymptoms = async (req, res) => {
     console.log('Extracted conditions:', JSON.stringify(possibleConditions, null, 2));
     
     const recommendations = extractRecommendations(aiResponse);
+    const diagnosticTests = extractDiagnosticTests(aiResponse);
+    const longTermManagement = extractLongTermManagement(aiResponse);
     
     const analysis = {
       aiAnalysis: aiResponse,
       possibleConditions: possibleConditions,
-      recommendations: recommendations
+      recommendations: recommendations,
+      diagnosticTests: diagnosticTests,
+      longTermManagement: longTermManagement
     };
     
     // Return the analysis to the client
@@ -392,4 +413,138 @@ function extractRecommendations(aiResponse) {
   }
   
   return 'No specific recommendations provided. Please consult with a veterinarian for proper guidance based on your pet\'s symptoms.';
+}
+
+/**
+ * Extracts diagnostic tests from the AI response
+ * @param {string} aiResponse - The raw AI response text
+ * @returns {string} - The extracted diagnostic tests
+ */
+function extractDiagnosticTests(aiResponse) {
+  const lines = aiResponse.split('\n');
+  let inDiagnosticTestsSection = false;
+  let diagnosticTests = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Check if we're in the diagnostic tests section
+    if (line.toLowerCase().includes('diagnostic tests') || 
+        line.toLowerCase().includes('potential tests') ||
+        line.toLowerCase().includes('recommended tests')) {
+      inDiagnosticTestsSection = true;
+      // Add the header if it's a proper heading
+      if (line.match(/^#+\s+/)) {
+        diagnosticTests.push(line.replace(/^#+\s+/, '**') + '**');
+      }
+      continue;
+    }
+    
+    // Check if we've moved past the diagnostic tests section
+    if (inDiagnosticTestsSection && line !== '' && 
+        line.match(/^#+\s+[A-Z]/) && // Markdown heading
+        !line.toLowerCase().includes('test') &&
+        !line.toLowerCase().includes('diagnos')) {
+      inDiagnosticTestsSection = false;
+      break;
+    }
+    
+    // Collect diagnostic test lines
+    if (inDiagnosticTestsSection && line !== '') {
+      // Format bullet points consistently
+      if (line.match(/^[*•-]\s+/)) {
+        diagnosticTests.push(line.replace(/^[*•-]\s+/, '• '));
+      } else if (line.match(/^\d+\.\s+/)) {
+        // Keep numbered lists as is
+        diagnosticTests.push(line);
+      } else if (line.match(/^[A-Z]/)) {
+        // If it starts with a capital letter and isn't a bullet point, it might be a new paragraph
+        diagnosticTests.push('\n' + line);
+      } else {
+        diagnosticTests.push(line);
+      }
+    }
+  }
+  
+  // If we found diagnostic tests, join them and format them
+  if (diagnosticTests.length > 0) {
+    return diagnosticTests.join('\n');
+  }
+  
+  // Fallback: try to find diagnostic tests using regex
+  const testsMatch = aiResponse.match(/diagnostic tests[:\s]+([\s\S]+?)(?=\n\n|\n[A-Z#]|$)/i);
+  
+  if (testsMatch && testsMatch[1]) {
+    return testsMatch[1].trim();
+  }
+  
+  return 'No specific diagnostic tests provided. A veterinarian would determine appropriate tests based on physical examination.';
+}
+
+/**
+ * Extracts long-term management information from the AI response
+ * @param {string} aiResponse - The raw AI response text
+ * @returns {string} - The extracted long-term management information
+ */
+function extractLongTermManagement(aiResponse) {
+  const lines = aiResponse.split('\n');
+  let inLongTermSection = false;
+  let longTermInfo = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Check if we're in the long-term management section
+    if (line.toLowerCase().includes('long-term management') || 
+        line.toLowerCase().includes('long term management') ||
+        line.toLowerCase().includes('ongoing care') ||
+        line.toLowerCase().includes('management considerations')) {
+      inLongTermSection = true;
+      // Add the header if it's a proper heading
+      if (line.match(/^#+\s+/)) {
+        longTermInfo.push(line.replace(/^#+\s+/, '**') + '**');
+      }
+      continue;
+    }
+    
+    // Check if we've moved past the long-term section
+    if (inLongTermSection && line !== '' && 
+        line.match(/^#+\s+[A-Z]/) && // Markdown heading
+        !line.toLowerCase().includes('management') &&
+        !line.toLowerCase().includes('care') &&
+        !line.toLowerCase().includes('long-term')) {
+      inLongTermSection = false;
+      break;
+    }
+    
+    // Collect long-term management lines
+    if (inLongTermSection && line !== '') {
+      // Format bullet points consistently
+      if (line.match(/^[*•-]\s+/)) {
+        longTermInfo.push(line.replace(/^[*•-]\s+/, '• '));
+      } else if (line.match(/^\d+\.\s+/)) {
+        // Keep numbered lists as is
+        longTermInfo.push(line);
+      } else if (line.match(/^[A-Z]/)) {
+        // If it starts with a capital letter and isn't a bullet point, it might be a new paragraph
+        longTermInfo.push('\n' + line);
+      } else {
+        longTermInfo.push(line);
+      }
+    }
+  }
+  
+  // If we found long-term management info, join them and format them
+  if (longTermInfo.length > 0) {
+    return longTermInfo.join('\n');
+  }
+  
+  // Fallback: try to find long-term management using regex
+  const managementMatch = aiResponse.match(/long.term management[:\s]+([\s\S]+?)(?=\n\n|\n[A-Z#]|$)/i);
+  
+  if (managementMatch && managementMatch[1]) {
+    return managementMatch[1].trim();
+  }
+  
+  return 'No specific long-term management information provided. A veterinarian would develop an appropriate long-term care plan based on diagnosis.';
 }
