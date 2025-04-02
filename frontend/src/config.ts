@@ -1,11 +1,24 @@
 // API URL based on environment
 const isDevelopment = import.meta.env.DEV;
 
-// In production, use the current origin (empty string makes it use relative URLs)
-// For mobile compatibility, we'll use the full origin URL
-export const API_URL = isDevelopment 
-  ? 'http://localhost:5000'
-  : window.location.origin; // This will use the full URL of wherever the app is hosted
+// Get the current hostname/URL
+function getBaseUrl() {
+  // For development, use localhost
+  if (isDevelopment) {
+    return 'http://localhost:5000';
+  }
+
+  // For production deployed environments
+  if (window.location.hostname === 'localhost') {
+    return 'http://localhost:5000'; // Local production build
+  }
+
+  // For Render and other cloud providers
+  // Using window.location.origin ensures it works on all devices
+  return window.location.origin;
+}
+
+export const API_URL = getBaseUrl();
 
 export default {
   API_URL

@@ -4,6 +4,10 @@ services:
     env: node
     buildCommand: npm install && cd frontend && npm install && npm run build && cd ..
     startCommand: node backend/server.js
+    autoscaling:
+      min: 1  # Ensures at least one instance always runs
+      max: 1  # Maximum instance count
+    healthCheckPath: /api/health  # Create a health endpoint
     envVars:
       - key: NODE_ENV
         value: production

@@ -22,6 +22,11 @@ const corsOptions = {
 app.use(express.json());
 app.use(cors(corsOptions));
 
+// Health check endpoint for Render
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Routes
 app.use("/api/analyze", analyzeRoutes);
 

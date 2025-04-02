@@ -26,43 +26,67 @@ const Home: React.FC = () => {
     setError(null);
     setAnalysisResult(null);
     
-    try {
-      // Log request details for debugging
-      console.log(`Making API request to: ${API_URL}/api/analyze`);
-      
-      // Make API call to the backend with a timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-      
-      const response = await fetch(`${API_URL}/api/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ petType, petProblem }),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        // Enhanced error handling with more specific messages
-        let errorMessage = 'Failed to analyze pet symptoms';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+    // Log the API URL for debugging
+    console.log('API URL being used:', API_URL);
+    
+    // Retry logic
+    let retries = 0;
+    const maxRetries = 2;
+    
+    const attemptApiCall = async (): Promise<any> => {
+      try {
+        // Log request details for debugging
+        console.log(`Making API request to: ${API_URL}/api/analyze (Attempt ${retries + 1}/${maxRetries + 1})`);
+        
+        // Make API call to the backend with a timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const response = await fetch(`${API_URL}/api/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ petType, petProblem }),
+          signal: controller.signal,
+          // Disable cache to prevent stale responses
+          cache: 'no-store'
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          // Enhanced error handling with more specific messages
+          let errorMessage = 'Failed to analyze pet symptoms';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            errorMessage = `Server error (${response.status}): ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
         }
-        throw new Error(errorMessage);
+        
+        const responseData = await response.json();
+        
+        if (!responseData.success) {
+          throw new Error(responseData.message || 'Analysis failed');
+        }
+        
+        return responseData.data;
+      } catch (err) {
+        if (retries < maxRetries) {
+          retries++;
+          console.log(`Retrying API call (${retries}/${maxRetries})...`);
+          // Exponential backoff: 1s, 2s, etc.
+          await new Promise(resolve => setTimeout(resolve, retries * 1000));
+          return attemptApiCall();
+        }
+        throw err;
       }
-      
-      const responseData = await response.json();
-      
-      if (!responseData.success) {
-        throw new Error(responseData.message || 'Analysis failed');
-      }
-      
-      setAnalysisResult(responseData.data);
-      
+    };
+    
+    try {
+      const data = await attemptApiCall();
+      setAnalysisResult(data);
     } catch (err: unknown) {
       console.error('Error analyzing pet symptoms:', err);
       // More specific error handling for network issues
