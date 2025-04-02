@@ -86,7 +86,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onSubmit, isLoading = false }) =>
               type="text"
               id="otherPetType"
               value={otherPetType}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setOtherPetType(e.target.value)}
+              onChange={(e) => setOtherPetType(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your pet type..."
               disabled={isLoading}
@@ -104,7 +104,7 @@ const InputArea: React.FC<InputAreaProps> = ({ onSubmit, isLoading = false }) =>
           <textarea
             id="petProblem"
             value={petProblem}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPetProblem(e.target.value)}
+            onChange={(e) => setPetProblem(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[150px]"
             placeholder="Describe your pet's symptoms or problems in detail..."
             disabled={isLoading}

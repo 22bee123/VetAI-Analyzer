@@ -1,13 +1,9 @@
 {
   "name": "vetai-analyzer",
   "version": "1.0.0",
-  "main": "backend/server.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "nodemon backend/server.js",
-    "start": "node backend/server.js",
-    "install-client": "cd frontend && npm install",
-    "build-client": "cd frontend && npm run build",
-    "heroku-postbuild": "npm run install-client && npm run build-client"
+    "dev": "nodemon backend/server.js"
   },
   "type": "module",
   "keywords": [],
@@ -23,8 +19,5 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
-  },
-  "engines": {
-    "node": ">=18.0.0"
   }
 }
