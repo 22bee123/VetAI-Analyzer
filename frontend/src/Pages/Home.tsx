@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import InputArea from '../components/InputArea';
+import { API_URL } from '../config';
 
 interface Condition {
   condition: string;
@@ -27,7 +28,7 @@ const Home: React.FC = () => {
     
     try {
       // Make API call to the backend
-      const response = await fetch('http://localhost:5000/api/analyze', {
+      const response = await fetch(`${API_URL}/api/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ petType, petProblem })
