@@ -9,12 +9,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-
 const __dirname = path.resolve();
+
+// CORS configuration
+const corsOptions = {
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
 
 // Routes
 app.use("/api/analyze", analyzeRoutes);

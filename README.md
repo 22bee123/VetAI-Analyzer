@@ -40,6 +40,25 @@ AI-powered veterinary symptom analysis tool that helps pet owners understand pot
    - Your application will be available at the URL provided by Render
    - Test the application to ensure it works as expected
 
+## Mobile Compatibility
+
+To ensure your app works well on mobile devices, we've included the following improvements:
+
+1. **Service Worker**: Provides better performance and partial offline capabilities
+2. **Enhanced Error Handling**: Better handles network issues common on mobile devices
+3. **Absolute API URLs**: Configuration uses absolute URLs to avoid issues with relative paths on mobile
+
+### Mobile Troubleshooting
+
+If you're experiencing issues with mobile access:
+
+1. **Clear Browser Cache**: On your mobile device, clear the browser cache and cookies
+2. **Use HTTPS**: Ensure you're accessing the site via HTTPS
+3. **Check Network**: Ensure your mobile device has a stable internet connection
+4. **Try Different Browser**: Test on multiple browsers (Chrome, Safari, Firefox)
+5. **Check Console Logs**: If possible, connect to remote debugging and check console logs
+6. **Update App**: Make sure you've deployed the latest version with mobile fixes
+
 ## Alternative Deployment Method Using render.yaml
 
 This repository includes a `render.yaml` file that allows for easy deployment using Render's Blueprint feature.

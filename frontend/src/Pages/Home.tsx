@@ -27,16 +27,32 @@ const Home: React.FC = () => {
     setAnalysisResult(null);
     
     try {
-      // Make API call to the backend
+      // Log request details for debugging
+      console.log(`Making API request to: ${API_URL}/api/analyze`);
+      
+      // Make API call to the backend with a timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch(`${API_URL}/api/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ petType, petProblem })
+        body: JSON.stringify({ petType, petProblem }),
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to analyze pet symptoms');
+        // Enhanced error handling with more specific messages
+        let errorMessage = 'Failed to analyze pet symptoms';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
       
       const responseData = await response.json();
@@ -47,9 +63,20 @@ const Home: React.FC = () => {
       
       setAnalysisResult(responseData.data);
       
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error analyzing pet symptoms:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      // More specific error handling for network issues
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Request timed out. Please check your connection and try again.');
+        } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError('Network error. Please check your connection and try again.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setIsLoading(false);
     }
