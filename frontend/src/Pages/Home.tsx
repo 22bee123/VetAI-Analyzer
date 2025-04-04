@@ -113,6 +113,42 @@ const Home: React.FC = () => {
     return 'bg-green-100 text-green-800 border-green-200';
   };
 
+  const getProbabilityIcon = (probability: string) => {
+    const prob = probability.toLowerCase();
+    if (prob === 'high') {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        </svg>
+      );
+    }
+    if (prob === 'medium') {
+      return (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        </svg>
+      );
+    }
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    );
+  };
+
+  // Format description with better details
+  const formatConditionDescription = (description: string) => {
+    return {
+      __html: description
+        .replace(/\*\*(.*?)\*\*/g, '<span class="font-semibold text-gray-900">$1</span>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/•\s(.*?)(?=(\n|$))/g, '<div class="flex items-start my-2"><div class="rounded-full bg-gray-400 w-1.5 h-1.5 mt-2 mr-3 flex-shrink-0"></div><div>$1</div></div>')
+        .replace(/(\d+)\.\s(.*?)(?=(\n|$))/g, '<div class="flex items-start my-2"><div class="flex-shrink-0 text-blue-800 font-medium mr-2">$1.</div><div>$2</div></div>')
+        .replace(/\n\n/g, '</p><p class="mb-3">')
+        .replace(/\n(?!<\/p>)/g, '<br />')
+    };
+  };
+
   const formatMarkdown = (content: string) => {
     return {
       __html: content
@@ -200,17 +236,67 @@ const Home: React.FC = () => {
                 {/* Possible Conditions Section */}
                 <section>
                   <h3 className="text-xl font-medium mb-4 text-blue-800 border-b pb-2">Possible Conditions</h3>
-                  <div className="space-y-4">
+                  
+                  {/* Group conditions by probability */}
+                  {analysisResult.possibleConditions.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex flex-wrap gap-2 text-xs mb-3">
+                        <div className="flex items-center px-2 py-1 rounded-full bg-red-50 border border-red-200 text-red-800">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          <span>High: Urgent care recommended</span>
+                        </div>
+                        <div className="flex items-center px-2 py-1 rounded-full bg-yellow-50 border border-yellow-200 text-yellow-800">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          <span>Medium: Vet visit advised</span>
+                        </div>
+                        <div className="flex items-center px-2 py-1 rounded-full bg-green-50 border border-green-200 text-green-800">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span>Low: Monitor at home</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-5">
                     {analysisResult.possibleConditions.map((condition, index) => (
-                      <div key={index} className="border rounded-lg overflow-hidden shadow-sm">
-                        <div className="flex items-center justify-between p-4 bg-gray-50">
-                          <h4 className="font-semibold text-lg">{condition.condition}</h4>
+                      <div key={index} className="bg-white border rounded-lg overflow-hidden shadow-sm">
+                        <div className={`flex items-center justify-between px-4 py-3 ${condition.probability.toLowerCase() === 'high' ? 'bg-red-50' : condition.probability.toLowerCase() === 'medium' ? 'bg-yellow-50' : 'bg-green-50'}`}>
+                          <div className="flex items-center">
+                            {getProbabilityIcon(condition.probability)}
+                            <h4 className="font-semibold text-lg text-gray-900">{condition.condition}</h4>
+                          </div>
                           <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getProbabilityColor(condition.probability)}`}>
                             {condition.probability}
                           </span>
                         </div>
-                        <div className="p-4">
-                          <div className="prose max-w-none text-gray-700" dangerouslySetInnerHTML={formatMarkdown(condition.description)} />
+                        <div className="p-5 border-t">
+                          <div className="prose max-w-none text-gray-700" dangerouslySetInnerHTML={formatConditionDescription(condition.description)} />
+                          
+                          {/* Common symptoms - If the description contains "Common symptoms" or similar */}
+                          {condition.description.toLowerCase().includes("symptom") && (
+                            <div className="mt-4 pt-3 border-t border-gray-100">
+                              <details className="group">
+                                <summary className="flex items-center text-sm font-medium text-blue-700 cursor-pointer">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 group-open:rotate-90 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  View common symptoms
+                                </summary>
+                                <div className="mt-2 pl-6 text-sm text-gray-600">
+                                  {/* Extract and display symptoms from the condition description */}
+                                  <p>Look for typical signs like: {condition.description.includes("symptoms") ? 
+                                    condition.description.split("symptoms").pop()?.split(".")[0] + "." : 
+                                    "changes in behavior, appetite, or energy levels."}</p>
+                                </div>
+                              </details>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
