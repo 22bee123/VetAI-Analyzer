@@ -1,54 +1,82 @@
-# React + TypeScript + Vite
+# VetAI Analyzer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A web application that helps pet owners analyze their pet's symptoms and find nearby veterinary clinics.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- AI-powered analysis of pet symptoms
+- Find nearest veterinary clinics based on user location using free OpenStreetMap data
+- View clinic details and get directions
+- Modern, responsive UI built with React and Tailwind CSS
 
-## Expanding the ESLint configuration
+## Setup and Installation
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- Node.js 18.x or higher
+- npm or yarn
+
+### Installation
+
+1. Clone the repository
+2. Navigate to the frontend directory
+```bash
+cd frontend
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+3. Install dependencies
+```bash
+npm install
 ```
+
+> **Note on Dependencies:** This project uses React 18.x because react-leaflet 4.2.1 is not yet compatible with React 19. If you encounter any dependency conflicts, you can use the `--legacy-peer-deps` flag: `npm install --legacy-peer-deps`
+
+### Running the Application
+
+1. Start the development server
+```bash
+npm run dev
+```
+
+2. Open your browser and navigate to `http://localhost:5173`
+
+## Maps and Geolocation
+
+This application uses:
+- **Leaflet** - A free, open-source JavaScript library for interactive maps
+- **OpenStreetMap** - Free map data that powers the visual map
+- **Overpass API** - Free API to query OpenStreetMap data for veterinary clinics near the user
+
+The map functionality:
+- Requires user location permission to work (please allow location access when prompted)
+- Searches for veterinary clinics within a 5km radius of the user
+- If no veterinary clinics are found, it will show pet shops and animal boarding facilities as alternatives
+- Provides directions through OpenStreetMap's routing service
+
+## Backend Setup
+
+The application requires a backend server for the pet symptom analysis feature. The backend is located in a separate repository and needs to be set up separately.
+
+1. Clone the backend repository (if not already included)
+2. Follow the instructions in the backend repository's README to set up and run the backend server
+
+## Deployment
+
+To build the application for production:
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist` directory and can be deployed to any static hosting service.
+
+## Technologies Used
+
+- React 18
+- TypeScript
+- Tailwind CSS
+- Vite
+- Leaflet for maps
+- React Leaflet
+- OpenStreetMap data
+- React Router
