@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import InputArea from '../components/InputArea';
+import { API_URL } from '../config';
 
 interface Condition {
   condition: string;
@@ -25,30 +26,81 @@ const Home: React.FC = () => {
     setError(null);
     setAnalysisResult(null);
     
+    // Log the API URL for debugging
+    console.log('API URL being used:', API_URL);
+    
+    // Retry logic
+    let retries = 0;
+    const maxRetries = 2;
+    
+    const attemptApiCall = async (): Promise<any> => {
+      try {
+        // Log request details for debugging
+        console.log(`Making API request to: ${API_URL}/api/analyze (Attempt ${retries + 1}/${maxRetries + 1})`);
+        
+        // Make API call to the backend with a timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const response = await fetch(`${API_URL}/api/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ petType, petProblem }),
+          signal: controller.signal,
+          // Disable cache to prevent stale responses
+          cache: 'no-store'
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          // Enhanced error handling with more specific messages
+          let errorMessage = 'Failed to analyze pet symptoms';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            errorMessage = `Server error (${response.status}): ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
+        }
+        
+        const responseData = await response.json();
+        
+        if (!responseData.success) {
+          throw new Error(responseData.message || 'Analysis failed');
+        }
+        
+        return responseData.data;
+      } catch (err) {
+        if (retries < maxRetries) {
+          retries++;
+          console.log(`Retrying API call (${retries}/${maxRetries})...`);
+          // Exponential backoff: 1s, 2s, etc.
+          await new Promise(resolve => setTimeout(resolve, retries * 1000));
+          return attemptApiCall();
+        }
+        throw err;
+      }
+    };
+    
     try {
-      // Make API call to the backend
-      const response = await fetch('http://localhost:5000/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ petType, petProblem })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to analyze pet symptoms');
-      }
-      
-      const responseData = await response.json();
-      
-      if (!responseData.success) {
-        throw new Error(responseData.message || 'Analysis failed');
-      }
-      
-      setAnalysisResult(responseData.data);
-      
-    } catch (err) {
+      const data = await attemptApiCall();
+      setAnalysisResult(data);
+    } catch (err: unknown) {
       console.error('Error analyzing pet symptoms:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      // More specific error handling for network issues
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          setError('Request timed out. Please check your connection and try again.');
+        } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError('Network error. Please check your connection and try again.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setIsLoading(false);
     }

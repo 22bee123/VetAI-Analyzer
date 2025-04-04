@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon backend/server.js"
+    "dev": "nodemon backend/server.js",
+    "start": "NODE_ENV=production node backend/server.js",
+    "build": "cd frontend && npm install && npm run build",
+    "deploy": "npm install && npm run build && npm start",
+    "postinstall": "npm run build"
   },
   "type": "module",
   "keywords": [],
