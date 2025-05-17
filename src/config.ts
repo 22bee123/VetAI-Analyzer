@@ -9,7 +9,7 @@ function getBaseUrl() {
   }
 
   // For production deployed environments
-  // Empty string means use relative URLs which works for both local and deployed environments
+  // Empty string means use relative URLs which works with Vercel serverless functions
   return '';
 }
 
