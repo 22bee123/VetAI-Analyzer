@@ -1,3 +1,8 @@
+// Specify Vercel runtime configuration
+export const config = {
+  runtime: 'nodejs18.x',
+};
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Helper functions from the original backend
