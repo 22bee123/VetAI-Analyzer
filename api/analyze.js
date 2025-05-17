@@ -448,6 +448,16 @@ export default async function handler(req, res) {
       });
     }
     
+    // Check if API key is available
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('GEMINI_API_KEY environment variable is not set');
+      return res.status(500).json({
+        success: false,
+        message: 'API configuration error: Missing API key',
+        error: 'GEMINI_API_KEY environment variable is not set'
+      });
+    }
+    
     // Initialize the Gemini API with the key from environment variables
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
@@ -517,11 +527,28 @@ export default async function handler(req, res) {
     });
     
   } catch (error) {
+    // Log detailed error information
     console.error('Error in analyzePetSymptoms:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      apiKey: process.env.GEMINI_API_KEY ? 'API key is set (not showing for security)' : 'API key is missing'
+    });
+    
+    // Determine if this is an API key related error
+    let errorMessage = 'Failed to analyze pet symptoms';
+    if (error.message && error.message.includes('API key not valid')) {
+      errorMessage = 'Invalid API key configuration';
+    } else if (error.message && error.message.includes('API key')) {
+      errorMessage = 'API key error: ' + error.message;
+    }
+    
     return res.status(500).json({
       success: false,
-      message: 'Failed to analyze pet symptoms',
-      error: error.message
+      message: errorMessage,
+      error: error.message,
+      errorType: error.name || 'Unknown error type'
     });
   }
 }
