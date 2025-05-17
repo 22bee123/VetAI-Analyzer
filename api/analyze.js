@@ -1,116 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-// Initialize the Gemini API with the key from .env
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-/**
- * Analyzes pet symptoms using the Gemini API
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
-export const analyzePetSymptoms = async (req, res) => {
-  try {
-    const { petType, petProblem } = req.body;
-    
-    // Validate input
-    if (!petType || !petProblem) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Pet type and problem description are required' 
-      });
-    }
-    
-    // Initialize the Gemini model with more tokens and temperature for more detailed responses
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.9,
-        topK: 40,
-        maxOutputTokens: 4096,
-      }
-    });
-    
-    // Construct the prompt for the AI
-    const prompt = `
-      I need a comprehensive and detailed veterinary analysis for a ${petType} with the following symptoms: ${petProblem}.
-      
-      Please provide an extensive and thorough response with:
-      1. A detailed analysis of the symptoms with physiological explanations where relevant
-      2. Possible conditions (at least 4-5 if applicable) with probability levels (High, Medium, Low) and confidence percentages
-      3. Comprehensive description of each condition including pathophysiology, typical progression, and distinguishing features
-      4. Detailed recommendations for the pet owner organized by urgency and importance
-      5. Potential diagnostic tests that would help confirm the diagnosis
-      6. Long-term management considerations if applicable
-      
-      For the recommendations section, please:
-      - Start with a clear, concise summary of the most urgent action needed
-      - Provide specific, actionable steps organized by priority
-      - Include both immediate care recommendations and follow-up actions
-      - Use professional medical terminology while remaining accessible to pet owners
-      - Format each recommendation as a separate bullet point for clarity
-      - Include timeframes for when to seek veterinary care (e.g., "within 24 hours" or "immediately if symptoms worsen")
-      
-      For each condition, please include:
-      - Common clinical signs and how they relate to the described symptoms
-      - Typical progression of the condition if left untreated
-      - Potential complications
-      - General prognosis with proper treatment
-      
-      Format the response in a structured way that can be parsed easily, using markdown formatting.
-      Please provide an extensive and detailed response (at least 500 words) to ensure comprehensive coverage of all aspects.
-    `;
-    
-    console.log('Sending request to Gemini API...');
-    
-    // Generate content using Gemini API
-    const result = await model.generateContent(prompt);
-    const aiResponse = result.response.text();
-    
-    console.log('AI Response type:', typeof aiResponse);
-    
-    // Extract structured data from the AI response
-    console.log('Extracting structured data from AI response...');
-    
-    const possibleConditions = extractConditions(aiResponse);
-    console.log('Extracted conditions:', JSON.stringify(possibleConditions, null, 2));
-    
-    const recommendations = extractRecommendations(aiResponse);
-    const diagnosticTests = extractDiagnosticTests(aiResponse);
-    const longTermManagement = extractLongTermManagement(aiResponse);
-    
-    const analysis = {
-      aiAnalysis: aiResponse,
-      possibleConditions: possibleConditions,
-      recommendations: recommendations,
-      diagnosticTests: diagnosticTests,
-      longTermManagement: longTermManagement
-    };
-    
-    // Return the analysis to the client
-    return res.status(200).json({
-      success: true,
-      data: analysis
-    });
-    
-  } catch (error) {
-    console.error('Error in analyzePetSymptoms:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to analyze pet symptoms',
-      error: error.message
-    });
-  }
-};
-
-/**
- * Extracts conditions from the AI response
- * @param {string} aiResponse - The raw AI response text
- * @returns {Array} - Array of condition objects
- */
+// Helper functions from the original backend
 function extractConditions(aiResponse) {
   // This is a more robust extraction logic to handle different AI response formats
   const conditions = [];
@@ -319,12 +209,6 @@ function extractConditions(aiResponse) {
   return conditions;
 }
 
-/**
- * Helper function to extract description for a specific condition
- * @param {string} conditionName - The name of the condition
- * @param {Array} lines - Array of lines from the AI response
- * @returns {string} - The extracted description
- */
 function extractDescriptionForCondition(conditionName, lines) {
   // Look for descriptions that follow the condition name
   for (let i = 0; i < lines.length; i++) {
@@ -341,11 +225,6 @@ function extractDescriptionForCondition(conditionName, lines) {
   return 'No detailed description available';
 }
 
-/**
- * Extracts recommendations from the AI response
- * @param {string} aiResponse - The raw AI response text
- * @returns {string} - The extracted recommendations
- */
 function extractRecommendations(aiResponse) {
   // More robust extraction of recommendations
   const lines = aiResponse.split('\n');
@@ -415,11 +294,6 @@ function extractRecommendations(aiResponse) {
   return 'No specific recommendations provided. Please consult with a veterinarian for proper guidance based on your pet\'s symptoms.';
 }
 
-/**
- * Extracts diagnostic tests from the AI response
- * @param {string} aiResponse - The raw AI response text
- * @returns {string} - The extracted diagnostic tests
- */
 function extractDiagnosticTests(aiResponse) {
   const lines = aiResponse.split('\n');
   let inDiagnosticTestsSection = false;
@@ -481,11 +355,6 @@ function extractDiagnosticTests(aiResponse) {
   return 'No specific diagnostic tests provided. A veterinarian would determine appropriate tests based on physical examination.';
 }
 
-/**
- * Extracts long-term management information from the AI response
- * @param {string} aiResponse - The raw AI response text
- * @returns {string} - The extracted long-term management information
- */
 function extractLongTermManagement(aiResponse) {
   const lines = aiResponse.split('\n');
   let inLongTermSection = false;
@@ -547,4 +416,112 @@ function extractLongTermManagement(aiResponse) {
   }
   
   return 'No specific long-term management information provided. A veterinarian would develop an appropriate long-term care plan based on diagnosis.';
+}
+
+// Vercel serverless function handler
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  // Handle OPTIONS request for CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+
+  try {
+    const { petType, petProblem } = req.body;
+    
+    // Validate input
+    if (!petType || !petProblem) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Pet type and problem description are required' 
+      });
+    }
+    
+    // Initialize the Gemini API with the key from environment variables
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+    // Initialize the Gemini model with more tokens and temperature for more detailed responses
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 4096,
+      }
+    });
+    
+    // Construct the prompt for the AI
+    const prompt = `
+      I need a comprehensive and detailed veterinary analysis for a ${petType} with the following symptoms: ${petProblem}.
+      
+      Please provide an extensive and thorough response with:
+      1. A detailed analysis of the symptoms with physiological explanations where relevant
+      2. Possible conditions (at least 4-5 if applicable) with probability levels (High, Medium, Low) and confidence percentages
+      3. Comprehensive description of each condition including pathophysiology, typical progression, and distinguishing features
+      4. Detailed recommendations for the pet owner organized by urgency and importance
+      5. Potential diagnostic tests that would help confirm the diagnosis
+      6. Long-term management considerations if applicable
+      
+      For the recommendations section, please:
+      - Start with a clear, concise summary of the most urgent action needed
+      - Provide specific, actionable steps organized by priority
+      - Include both immediate care recommendations and follow-up actions
+      - Use professional medical terminology while remaining accessible to pet owners
+      - Format each recommendation as a separate bullet point for clarity
+      - Include timeframes for when to seek veterinary care (e.g., "within 24 hours" or "immediately if symptoms worsen")
+      
+      For each condition, please include:
+      - Common clinical signs and how they relate to the described symptoms
+      - Typical progression of the condition if left untreated
+      - Potential complications
+      - General prognosis with proper treatment
+      
+      Format the response in a structured way that can be parsed easily, using markdown formatting.
+      Please provide an extensive and detailed response (at least 500 words) to ensure comprehensive coverage of all aspects.
+    `;
+    
+    // Generate content using Gemini API
+    const result = await model.generateContent(prompt);
+    const aiResponse = result.response.text();
+    
+    // Extract structured data from the AI response
+    const possibleConditions = extractConditions(aiResponse);
+    const recommendations = extractRecommendations(aiResponse);
+    const diagnosticTests = extractDiagnosticTests(aiResponse);
+    const longTermManagement = extractLongTermManagement(aiResponse);
+    
+    const analysis = {
+      aiAnalysis: aiResponse,
+      possibleConditions: possibleConditions,
+      recommendations: recommendations,
+      diagnosticTests: diagnosticTests,
+      longTermManagement: longTermManagement
+    };
+    
+    // Return the analysis to the client
+    return res.status(200).json({
+      success: true,
+      data: analysis
+    });
+    
+  } catch (error) {
+    console.error('Error in analyzePetSymptoms:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to analyze pet symptoms',
+      error: error.message
+    });
+  }
 }
