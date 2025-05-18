@@ -1,54 +1,87 @@
-# React + TypeScript + Vite
+# VetAI Analyzer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A professional pet symptom analyzer that uses AI to provide veterinary assessments and recommendations for pet health issues. The application also includes a map feature to find nearby veterinary clinics.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Professional veterinary analysis of pet symptoms
+- Structured results with severity indicators
+- Nearby veterinary clinic finder using OpenStreetMap
+- Responsive design for mobile and desktop
+- Print functionality for saving analysis results
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- Node.js (v16 or higher)
+- npm or yarn
+- Google Gemini API key
+
+### Installation
+
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/vetai-analyzer.git
+cd vetai-analyzer
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+2. Install dependencies
+```bash
+npm install
 ```
+
+3. Create a `.env` file in the root directory with your API key
+```
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+4. Start the development server
+```bash
+npm run dev
+```
+
+## Deploying to Vercel
+
+This project is configured for easy deployment to Vercel. Follow these steps to deploy:
+
+### Method 1: Using Vercel CLI
+
+1. Install Vercel CLI globally
+```bash
+npm install -g vercel
+```
+
+2. Login to Vercel
+```bash
+vercel login
+```
+
+3. Deploy the project
+```bash
+vercel --prod
+```
+
+### Method 2: Using Vercel Dashboard
+
+1. Push your code to a GitHub repository
+
+2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+
+3. Click "New Project" and import your repository
+
+4. Configure the project:
+   - Framework Preset: Vite
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+
+5. Add your environment variables:
+   - `VITE_GEMINI_API_KEY`: Your Google Gemini API key
+
+6. Click "Deploy"
+
+### Important Notes for Deployment
+
+- The map component uses client-side rendering to avoid issues with server-side rendering
+- Ensure your Gemini API key is properly set in the Vercel environment variables
+- The Overpass API used for finding veterinary clinics has rate limits, so be mindful of high traffic

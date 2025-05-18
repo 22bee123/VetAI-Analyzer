@@ -60,6 +60,12 @@ const NearbyVetsMap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<VetClinic | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const [isBrowser, setIsBrowser] = useState(false);
+  
+  // Check if we're in the browser environment
+  useEffect(() => {
+    setIsBrowser(typeof window !== 'undefined');
+  }, []);
 
   // Get user's location
   const getUserLocation = () => {
@@ -225,67 +231,74 @@ const NearbyVetsMap: React.FC = () => {
             </div>
           ) : (
             <div className="h-[400px] rounded-lg overflow-hidden border border-gray-200">
-              <MapContainer 
-                center={userLocation} 
-                zoom={13} 
-                style={{ height: '100%', width: '100%' }}
-                ref={(map) => { mapRef.current = map; }}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                
-                {userLocation && (
-                  <Marker position={userLocation} icon={userIcon}>
-                    <Popup>
-                      Your Location
-                    </Popup>
-                  </Marker>
-                )}
-                
-                {vetClinics.map((clinic) => (
-                  <Marker 
-                    key={clinic.id} 
-                    position={[clinic.lat, clinic.lon]} 
-                    icon={vetIcon}
-                    eventHandlers={{
-                      click: () => {
-                        setSelectedClinic(clinic);
-                      }
-                    }}
-                  >
-                    <Popup>
-                      <div>
-                        <h3 className="font-bold">{clinic.name}</h3>
-                        <p className="text-sm">{clinic.address}</p>
-                        <p className="text-sm">{clinic.phone}</p>
-                        {clinic.website && (
-                          <p className="text-sm">
-                            <a 
-                              href={clinic.website} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline"
-                            >
-                              Website
-                            </a>
-                          </p>
-                        )}
-                        <p className="text-sm mt-1">Distance: {clinic.distance} km</p>
-                        <button 
-                          onClick={() => getDirections(clinic)}
-                          className="mt-2 bg-blue-600 text-white px-2 py-1 text-xs rounded hover:bg-blue-700 transition-colors"
-                        >
-                          Get Directions
-                        </button>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
-                
-                {userLocation && <SetViewOnLocation coords={userLocation} />}
-              </MapContainer>
+              {isBrowser && (
+                <MapContainer 
+                  center={userLocation} 
+                  zoom={13} 
+                  style={{ height: '100%', width: '100%' }}
+                  ref={(map) => { mapRef.current = map; }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  
+                  {userLocation && (
+                    <Marker position={userLocation} icon={userIcon}>
+                      <Popup>
+                        Your Location
+                      </Popup>
+                    </Marker>
+                  )}
+                  
+                  {vetClinics.map((clinic) => (
+                    <Marker 
+                      key={clinic.id} 
+                      position={[clinic.lat, clinic.lon]} 
+                      icon={vetIcon}
+                      eventHandlers={{
+                        click: () => {
+                          setSelectedClinic(clinic);
+                        }
+                      }}
+                    >
+                      <Popup>
+                        <div>
+                          <h3 className="font-bold">{clinic.name}</h3>
+                          <p className="text-sm">{clinic.address}</p>
+                          <p className="text-sm">{clinic.phone}</p>
+                          {clinic.website && (
+                            <p className="text-sm">
+                              <a 
+                                href={clinic.website} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                              >
+                                Website
+                              </a>
+                            </p>
+                          )}
+                          <p className="text-sm mt-1">Distance: {clinic.distance} km</p>
+                          <button 
+                            onClick={() => getDirections(clinic)}
+                            className="mt-2 bg-blue-600 text-white px-2 py-1 text-xs rounded hover:bg-blue-700 transition-colors"
+                          >
+                            Get Directions
+                          </button>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+                  
+                  {userLocation && <SetViewOnLocation coords={userLocation} />}
+                </MapContainer>
+              )}
+              {!isBrowser && (
+                <div className="flex items-center justify-center h-full bg-gray-100">
+                  <p className="text-gray-500">Map is loading...</p>
+                </div>
+              )}
             </div>
           )}
         </div>
