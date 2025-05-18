@@ -1,39 +1,42 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Home from './Pages/Home';
-import VetMap from './Pages/map';
+import { useState } from "react"
+import LandingPage from "./pages/LandingPage"
+import FillupForm from "./pages/FilluppForm"
 
 function App() {
-  return (
-    <Router>
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-        <nav className="bg-white shadow-md">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center py-4">
-              <div className="text-2xl font-bold text-blue-800">VetAI Analyzer</div>
-              <div className="space-x-4">
-                <Link to="/" className="text-blue-700 hover:text-blue-900 px-3 py-2 rounded-md hover:bg-blue-50 transition-colors">Home</Link>
-                <Link to="/find-vet" className="text-blue-700 hover:text-blue-900 px-3 py-2 rounded-md hover:bg-blue-50 transition-colors">Find a Vet</Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-        
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/find-vet" element={<VetMap />} />
-        </Routes>
+  const [currentPage, setCurrentPage] = useState<string>("form");
 
-        <footer className="bg-white shadow-inner mt-10 py-6">
-          <div className="container mx-auto px-4">
-            <div className="text-center text-gray-600">
-              <p>© {new Date().getFullYear()} VetAI Analyzer. All rights reserved.</p>
-              <p className="text-sm mt-2">Disclaimer: This tool is for informational purposes only and should not replace professional veterinary care.</p>
-            </div>
+  const renderPage = () => {
+    switch (currentPage) {
+      case "form":
+        return <FillupForm />;
+      default:
+        return <LandingPage />;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-50">
+      <nav className="bg-white shadow-sm p-4">
+        <div className="max-w-7xl mx-auto flex justify-between">
+          <div className="text-xl font-bold text-blue-600">VetAI Analyzer</div>
+          <div className="space-x-4">
+
+            <button 
+              onClick={() => setCurrentPage("form")} 
+              className={`px-3 py-1 rounded-md ${currentPage === "form" ? "bg-blue-100 text-blue-700" : "text-neutral-700"}`}
+            >
+              Analyze Symptoms
+            </button>
+
           </div>
-        </footer>
-      </div>
-    </Router>
-  );
+        </div>
+      </nav>
+      
+      <main className="py-6">
+        {renderPage()}
+      </main>
+    </div>
+  )
 }
 
-export default App;
+export default App
